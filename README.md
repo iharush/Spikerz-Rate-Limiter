@@ -2,6 +2,23 @@
 
 A NestJS rate limiter with an exact rolling hour and a live React admin dashboard. [DESIGN.md](DESIGN.md) describes the rolling window, persistent bypass, and persistent extra quota.
 
+## Rate Limiting Interceptor presentation
+
+[Open the PDF](Spikerz%20-%20Rate%20Limiting%20Interceptor.pdf)
+
+<details>
+<summary>View all four slides</summary>
+
+![Rate Limiting Interceptor title slide](docs/rate-limiting-interceptor/page-1.png)
+
+![Three-layer system concept covering the data, control, and management planes](docs/rate-limiting-interceptor/page-2.png)
+
+![High-level architecture showing requests, admin commands, and event delivery across the three planes](docs/rate-limiting-interceptor/page-3.png)
+
+![Technical discussion points covering race conditions, identity extraction, response headers, sliding windows, scaling, and monitoring](docs/rate-limiting-interceptor/page-4.png)
+
+</details>
+
 ## Run the demo
 
 Requires Docker Engine with Compose. The first build downloads Node, PostgreSQL, nginx, and npm dependencies.
