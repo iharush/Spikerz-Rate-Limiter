@@ -6,7 +6,7 @@ A NestJS rate limiter with an exact rolling hour and a live React admin dashboar
 
 [Open the PDF](Spikerz%20-%20Rate%20Limiting%20Interceptor.pdf)
 
-<details>
+<details open>
 <summary>View all four slides</summary>
 
 ![Rate Limiting Interceptor title slide](docs/rate-limiting-interceptor/page-1.png)
