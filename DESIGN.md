@@ -116,10 +116,10 @@ sequenceDiagram
     G->>G: Verify token and establish principal
     G->>I: Verified user
     I->>DB: Call consume_quota with verified user and request ID
-    DB->>DB: Ensure state; UPDATE state to begin atomic accounting
-    DB->>DB: Read fresh time; reclaim expired quota entries once
-    DB->>DB: If bypass admit unchanged; else conditional decrement
-    DB->>DB: Append charged log and decision event; commit
+    DB->>DB: Ensure the state row exists and update it to begin atomic accounting
+    DB->>DB: Sample the current time and reclaim expired quota entries once
+    DB->>DB: Admit without charging if bypass is enabled, otherwise conditionally decrement quota
+    DB->>DB: Write the quota log entry if charged, record the decision event, and commit
     DB-->>I: Committed decision and remaining quota
     alt Admitted, including bypass
         I->>H: Execute after committed admission
