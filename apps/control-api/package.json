@@ -1,0 +1,9 @@
+{
+  "name": "@spikerz/control-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ../../dist/apps/control-api/src/main.js"
+  },
+  "type": "module"
+}

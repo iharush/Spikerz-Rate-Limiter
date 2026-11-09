@@ -1,0 +1,143 @@
+name: spikerz-rate-limiter
+x-api: &api
+  image: spikerz-api:local
+  build: { context: ., target: server }
+  restart: unless-stopped
+  init: true
+  healthcheck:
+    test:
+      [
+        CMD,
+        node,
+        -e,
+        "fetch('http://127.0.0.1:'+process.env.PORT+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+      ]
+    interval: 5s
+    timeout: 4s
+    retries: 20
+x-auth: &auth
+  ENABLE_DEMO_AUTH: 'true'
+  AUTH_ISSUER_URL: http://issuer:3000
+  AUTH_ISSUER: spikerz-demo
+  AUTH_AUDIENCE: spikerz
+  WEB_ORIGIN: http://localhost:8080
+  INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-local-development-service-key-change-me-123456789}
+services:
+  data-db:
+    image: postgres:18-alpine
+    ports: ['127.0.0.1:5433:5432']
+    environment:
+      {
+        POSTGRES_DB: data,
+        POSTGRES_USER: data,
+        POSTGRES_PASSWORD: '${DATA_DB_PASSWORD:-local-data-password}',
+      }
+    volumes: [data-db:/var/lib/postgresql]
+    networks: [data-storage, data-access]
+    healthcheck:
+      { test: [CMD-SHELL, 'pg_isready -U data -d data'], interval: 3s, timeout: 3s, retries: 20 }
+  control-db:
+    image: postgres:18-alpine
+    ports: ['127.0.0.1:5434:5432']
+    environment:
+      {
+        POSTGRES_DB: control,
+        POSTGRES_USER: control,
+        POSTGRES_PASSWORD: '${CONTROL_DB_PASSWORD:-local-control-password}',
+      }
+    volumes: [control-db:/var/lib/postgresql]
+    networks: [control-storage, control-access]
+    healthcheck:
+      {
+        test: [CMD-SHELL, 'pg_isready -U control -d control'],
+        interval: 3s,
+        timeout: 3s,
+        retries: 20,
+      }
+  management-db:
+    image: postgres:18-alpine
+    ports: ['127.0.0.1:5435:5432']
+    environment:
+      {
+        POSTGRES_DB: management,
+        POSTGRES_USER: management,
+        POSTGRES_PASSWORD: '${MANAGEMENT_DB_PASSWORD:-local-management-password}',
+      }
+    volumes: [management-db:/var/lib/postgresql]
+    networks: [management-storage, management-access]
+    healthcheck:
+      {
+        test: [CMD-SHELL, 'pg_isready -U management -d management'],
+        interval: 3s,
+        timeout: 3s,
+        retries: 20,
+      }
+  issuer:
+    <<: *api
+    command: [node, dist/apps/dev-issuer/src/main.js]
+    # This local-only issuer is explicitly enabled; the signing key never leaves it.
+    environment:
+      <<: *auth
+      NODE_ENV: development
+      PORT: 3000
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?Set DEMO_PASSWORD in .env before starting the demo}
+      KEY_DIRECTORY: /app/.secrets
+    volumes: [issuer-keys:/app/.secrets]
+    networks: [services]
+  data-api:
+    <<: *api
+    command: [node, dist/apps/data-api/src/main.js]
+    environment:
+      <<: *auth
+      PORT: 3001
+      DATABASE_URL: postgres://data:${DATA_DB_PASSWORD:-local-data-password}@data-db:5432/data
+      MANAGEMENT_INTERNAL_URL: http://management-api:3003
+    depends_on:
+      issuer: { condition: service_healthy }
+      data-db: { condition: service_healthy }
+    networks: [services, data-storage]
+  control-api:
+    <<: *api
+    command: [node, dist/apps/control-api/src/main.js]
+    environment:
+      <<: *auth
+      PORT: 3002
+      DATABASE_URL: postgres://control:${CONTROL_DB_PASSWORD:-local-control-password}@control-db:5432/control
+      DATA_INTERNAL_URL: http://data-api:3001
+    depends_on:
+      issuer: { condition: service_healthy }
+      control-db: { condition: service_healthy }
+    networks: [services, control-storage]
+  management-api:
+    <<: *api
+    command: [node, dist/apps/management-api/src/main.js]
+    environment:
+      <<: *auth
+      PORT: 3003
+      DATABASE_URL: postgres://management:${MANAGEMENT_DB_PASSWORD:-local-management-password}@management-db:5432/management
+    depends_on:
+      issuer: { condition: service_healthy }
+      management-db: { condition: service_healthy }
+    networks: [services, management-storage]
+  admin-web:
+    build: { context: ., target: web }
+    ports: ['127.0.0.1:8080:80']
+    depends_on:
+      data-api: { condition: service_healthy }
+      control-api: { condition: service_healthy }
+      management-api: { condition: service_healthy }
+    networks: [services]
+networks:
+  services:
+  data-storage: { internal: true }
+  control-storage: { internal: true }
+  management-storage: { internal: true }
+  # Non-internal bridges enable the loopback port mappings for local DB tools.
+  data-access:
+  control-access:
+  management-access:
+volumes:
+  data-db:
+  control-db:
+  management-db:
+  issuer-keys:

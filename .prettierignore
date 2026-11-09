@@ -1,0 +1,8 @@
+node_modules
+dist
+**/dist
+coverage
+package-lock.json
+DESIGN.md
+.secrets
+*.pdf

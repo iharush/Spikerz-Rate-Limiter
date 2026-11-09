@@ -1,0 +1,9 @@
+{
+  "name": "@spikerz/management-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ../../dist/apps/management-api/src/main.js"
+  },
+  "type": "module"
+}

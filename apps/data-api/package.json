@@ -1,0 +1,9 @@
+{
+  "name": "@spikerz/data-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ../../dist/apps/data-api/src/main.js"
+  },
+  "type": "module"
+}
